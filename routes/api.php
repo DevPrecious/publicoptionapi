@@ -10,4 +10,4 @@ Route::get('/user', function (Request $request) {
 
 
 Route::post('/poll', [PollController::class, 'createPoll']);
-
+Route::get('/poll/{unique_code}', [PollController::class, 'viewPoll']);

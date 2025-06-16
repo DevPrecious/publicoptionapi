@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Poll;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PollResource;
 use App\Models\Poll;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class PollController extends Controller
             foreach ($request->options as $option) {
                 $image = $option['image'] ?? null;
                 if ($image) {
-                    $imageName = time() . '.' . $image->extension();
+                    $imageName = time() . '_' . uniqid() . '.' . $image->extension();
                     $image->move(public_path('images'), $imageName);
                     $imagePath = 'images/' . $imageName;
                 } else {
@@ -56,6 +57,30 @@ class PollController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
+            return response([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function viewPoll(Request $request)
+    {
+        try {
+            $poll = Poll::where('unique_code', $request->unique_code)->first();
+            if (!$poll) {
+                return response([
+                    'status' => 'error',
+                    'message' => 'Poll not found'
+                ], 404);
+            }
+
+            return response([
+                'status' => 'success',
+                'data' => PollResource::make($poll)
+            ], 200);
+        } catch (\Exception $e) {
             return response([
                 'status' => 'error',
                 'message' => $e->getMessage()

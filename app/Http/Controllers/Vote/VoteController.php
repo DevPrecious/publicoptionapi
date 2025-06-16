@@ -25,16 +25,7 @@ class VoteController extends Controller
                 ], 404);
             }
 
-            $option = Option::where('id', $request->option_id)
-                ->where('poll_id', $poll->id)
-                ->first();
-
-            if (!$option) {
-                return response([
-                    'status' => 'error',
-                    'message' => 'Invalid option'
-                ], 400);
-            }
+            $option = $poll->options()->findOrFail($request->option_id);
 
             $ip = $request->ip();
             $alreadyVoted = Vote::where('poll_id', $poll->id)
@@ -53,7 +44,7 @@ class VoteController extends Controller
                 'option_id' => $option->id,
                 'ip_address' => $ip,
             ]);
-        
+
             $option->increment('vote_count');
 
             return response([

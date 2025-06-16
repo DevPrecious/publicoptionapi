@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Poll;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\OptionResource;
 use App\Http\Resources\PollResource;
 use App\Models\Poll;
 use Illuminate\Http\Request;
@@ -68,17 +69,29 @@ class PollController extends Controller
     public function viewPoll(Request $request)
     {
         try {
-            $poll = Poll::where('unique_code', $request->unique_code)->first();
+            $poll = Poll::with(['options' => function($query) {
+                $query->withCount('votes');
+            }])->where('unique_code', $request->unique_code)->first();
+            
             if (!$poll) {
                 return response([
                     'status' => 'error',
                     'message' => 'Poll not found'
                 ], 404);
             }
-
+            
+            $totalVotes = $poll->options->sum('votes_count');
+            
+            OptionResource::setTotalVotes($totalVotes);
+            
             return response([
                 'status' => 'success',
-                'data' => PollResource::make($poll)
+                'data' => [
+                    'poll' => PollResource::make($poll),
+                    'votes' => [
+                        'total' => $totalVotes
+                    ]
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response([
